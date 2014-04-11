@@ -10,9 +10,12 @@
 
 @implementation AppDelegate
 
+#pragma mark - UIApplicationDelegate Protocol
+
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    // Override point for customization after application launch.
+    [self checkForUnpatchedSystemVersion];
+
     return YES;
 }
 							
@@ -43,4 +46,57 @@
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 
+#pragma mark - Private Methods
+
+- (void)checkForUnpatchedSystemVersion
+{
+    NSString *systemVersion = [UIDevice currentDevice].systemVersion;
+
+    NSLog(@"systemVersion: %@", systemVersion);
+
+    NSInteger majorVersion = 0;
+    NSInteger minorVersion = 0;
+    NSInteger patchVersion = 0;
+
+    NSArray *versions = [systemVersion componentsSeparatedByString:@"."];
+    if ([versions count]) {
+        majorVersion = [versions[0] integerValue];
+        if ([versions count] >= 2) {
+            minorVersion = [versions[1] integerValue];
+            if ([versions count] >= 3) {
+                patchVersion = [versions[2] integerValue];
+            }
+        }
+    }
+
+    // 7.1+ is patched
+    if (majorVersion == 7 &&
+        minorVersion >= 1) {
+        return;
+    }
+
+    // 7.0.6 is patched
+    if (majorVersion == 7 &&
+        minorVersion == 0 &&
+        patchVersion  < 6) {
+        return;
+    }
+
+    // 6.1.6 is patched
+    if (majorVersion == 6 &&
+        minorVersion == 1 &&
+        patchVersion >= 6) {
+        return;
+    }
+
+    // Assume <5.x are not affected by #goto fail
+    if (majorVersion <= 5) {
+        return;
+    }
+
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"System Vulnerable"
+                                                        message:@"Your device is running a version of iOS known to be vulnerable to the SSL #gotofail flaw. Please upgrade ASAP"
+                                                       delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+    [alertView show];
+}
 @end
